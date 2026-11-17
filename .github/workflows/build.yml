@@ -15,31 +15,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
+      - name: Setup Java 25
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
 
-      - name: Validate build configuration
+      - name: Extract source ZIP
         run: |
-          if grep -q "REPLACE_WITH" plugin/gradle.properties; then
-            echo "Paper API and Minecraft API versions must be configured first."
-            exit 1
-          fi
+          sudo apt-get update
+          sudo apt-get install -y unzip
+          mkdir -p source
+          unzip -q "desecho-core (2).zip" -d source
 
-      - name: Build plugin
-        working-directory: plugin
+          test -f source/plugin/build.gradle.kts
+          test -f source/core/src/main/java/dev/des/desecho/core/engine/ScreenPlayer.java
+
+      - name: Configure Paper API
+        run: |
+          sed -i 's/REPLACE_WITH_PAPER_API_VERSION/26.2.build.+/' source/plugin/gradle.properties
+          sed -i 's/REPLACE_WITH_API_VERSION/26.2/' source/plugin/gradle.properties
+
+      - name: Build DESECHO
+        working-directory: source/plugin
         run: |
           gradle clean build --no-daemon
 
-      - name: Upload JAR
+      - name: Upload DESECHO JAR
         uses: actions/upload-artifact@v4
         with:
           name: DESECHO
-          path: plugin/build/libs/*.jar
+          path: source/plugin/build/libs/DESECHO.jar
           if-no-files-found: error
           
