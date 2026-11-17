@@ -1,0 +1,45 @@
+
+name: Build DESECHO
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Validate build configuration
+        run: |
+          if grep -q "REPLACE_WITH" plugin/gradle.properties; then
+            echo "Paper API and Minecraft API versions must be configured first."
+            exit 1
+          fi
+
+      - name: Build plugin
+        working-directory: plugin
+        run: |
+          gradle clean build --no-daemon
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: DESECHO
+          path: plugin/build/libs/*.jar
+          if-no-files-found: error
+          
